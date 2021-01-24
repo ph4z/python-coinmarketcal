@@ -24,43 +24,13 @@ logger = logging.getLogger('python-coinmarketcal')
 
 class Coinmarketcal:
 
-    def __init__(self, id, secret):
-        self.id = id
-        self.secret = secret
-
-    @property
-    def token(self):
-        if not getattr(self, '_token', None):
-            self._token = self.get_token(self.id, self.secret)
-        if datetime.datetime.now() > self._token['expires_at']:
-            self._token = self.get_token(self.id, self.secret)
-        return self._token['access_token']
-
-    def get_token(self, id, secret):
-        # Get the id and secret from
-        # https://api.coinmarketcal.com/developer/register
-        payload = {
-            'grant_type': 'client_credentials',
-            'client_id': id,
-            'client_secret': secret}
-        url = "https://api.coinmarketcal.com/oauth/v2/token"
-        try:
-            events =requests.post(url, data=payload)
-            result = json.loads(events.text)
-            result['expires_at'] = (
-                datetime.datetime.now()
-                + datetime.timedelta(seconds=result['expires_in']))
-        except json.decoder.JSONDecodeError:
-            logger.debug("JSONDecodeError")
-            result = []
-        logger.debug(result)
-        return result
+    def __init__(self, secret):
+        self.headers = {'x-api-key':secret, 'Accept-Encoding': "deflate, gzip", 'Accept': "application/json"}
 
     def get_coins(self):
-        payload = {'access_token': self.token}
-        url = "https://api.coinmarketcal.com/v1/coins"
+        url = "https://developers.coinmarketcal.com/v1/coins"
         try:
-            events =requests.get(url, params=payload)
+            events =requests.get(url, headers=self.headers)
             result = json.loads(events.text)
         except json.decoder.JSONDecodeError:
             logger.debug("JSONDecodeError")
@@ -68,10 +38,9 @@ class Coinmarketcal:
         return result
 
     def get_categories(self):
-        payload = {'access_token': self.token}
-        url = "https://api.coinmarketcal.com/v1/categories"
+        url = "https://developers.coinmarketcal.com/v1/categories"
         try:
-            events =requests.get(url, params=payload)
+            events =requests.get(url, headers=self.headers)
             result = json.loads(events.text)
         except json.decoder.JSONDecodeError:
             logger.debug("JSONDecodeError")
@@ -89,12 +58,11 @@ class Coinmarketcal:
             "coins": coins,
             "categories": categories,
             "sortBy": sortBy,
-            "showOnly": showOnly,
-            'access_token': self.token}
+            "showOnly": showOnly}
 
-        url = "https://api.coinmarketcal.com/v1/events"
+        url = "https://developers.coinmarketcal.com/v1/events"
         try:
-            events =requests.get(url, params=payload)
+            events =requests.get(url, params=payload, headers=self.headers)
             result = json.loads(events.text)
         except json.decoder.JSONDecodeError:
             logger.debug("JSONDecodeError")
